@@ -10,8 +10,8 @@ staticfiles/
 # Virtual Environment
 env/
 
-# Environment 
-main/main/.env/
+# Environment
+main/.env
 
 # IDE
 .idea/

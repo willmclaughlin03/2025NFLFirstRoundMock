@@ -3,6 +3,7 @@ from django.db import models
 # Create your models here.
 
 class User(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
     first_name = models.CharField(max_length = 30)
     last_name = models.CharField(max_length = 30)
     email_address = models.EmailField(max_length = 30)
