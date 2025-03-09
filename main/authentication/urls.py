@@ -1,14 +1,12 @@
 from django.contrib import admin
 from django.urls import path, include
-"""from .views import MyLoginView, MyLogoutView, MyRegisterView
+from .views import UserCreateView, UserRUDView
 
 
-urlpattterns = [
-    path('login/' MyLoginView.as_view(), name = 'login'),
-    path('logout/', MyLogutView.as_view(), name = 'logout'),
-    path('register', MyRegisterView.as_view(), name = 'register'),
+urlpatterns = [
+    path('register/', UserCreateView.as_view(), name = 'register'),
+    path('edit/', UserRUDView.as_view(), name = 'edit-account'),
 
          
 
 ]
-"""

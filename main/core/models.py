@@ -2,12 +2,6 @@ from django.db import models
 
 # Create your models here.
 
-class User(models.Model):
-    first_name = models.CharField(max_length = 30)
-    last_name = models.CharField(max_length = 30)
-    email_address = models.EmailField(max_length = 30)
-    username = models.CharField(max_length = 30)
-    password = models.CharField(max_length = 20)
 
 class combine_stats(models.Model):
     height =  models.FloatField(max_length=5, default= 'null')
@@ -26,6 +20,9 @@ class Player(models.Model):
     age = models.IntegerField(default = 20)
     college = models.CharField(max_length =  30, default= 'null')
     combine_stats = models.ForeignKey(combine_stats, on_delete = models.CASCADE, default= 'null')
+
+    def __str__(self):
+        return self.first_name
 
 
 
