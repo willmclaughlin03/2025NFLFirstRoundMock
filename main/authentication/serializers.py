@@ -10,8 +10,7 @@ class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(required = True)
     class Meta:
         model = User
-        fields = ['id',
-                  'first_name', 
+        fields = ['first_name', 
                   'last_name', 
                   'email_address', 
                   'username', 
@@ -27,20 +26,27 @@ class UserSerializer(serializers.ModelSerializer):
 
 
         def create(self, validated_data):
-
+        # Validate email address
             email_address = validated_data.get('email_address')
             try:
                 validate_email(email_address)
-            except:
-                raise serializers.ValidationError({"email_address" : "Please use a valid email!"})
+            except ValidationError:
+                raise serializers.ValidationError({"email_address": "Please use a valid email!"})
 
+        # Create the user instance
             user = User(
-                username = validated_data.get('username'),
-                first_name = validated_data.get('first_name'),
-                last_name = validated_data.get('last_name'),
-            )
+                username=validated_data.get('username'),
+                first_name=validated_data.get('first_name'),
+                last_name=validated_data.get('last_name'),
+                email_address=email_address,  # Assign the validated email
+        )
+
+        # Set and hash the password
             user.set_password(validated_data.get('password'))
+
+        # Save the user to the database
             user.save()
+
             return user
         
         def update(self, instance, validated_data):

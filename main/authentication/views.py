@@ -15,23 +15,30 @@ class UserCreateView(generics.CreateAPIView):
 
     # retrieves serializer, saves, then creates token for user
     def create(self, request, *args, **kwargs):
+        # to validate 
         serializer = self.get_serializer(data = request.data)
         serializer.is_valid(raise_exception = True)
 
-        serializer.is_valid(raise_exception = True)
-        user = serializer.validated_data
-        print(user)
-        print(type(user))
+        # saves the instance of the user
+        user = serializer.save()
 
+        # Debugging: Print user details
+        print(f"User created: {user}")
+        print(f"User type: {type(user)}")
+        print(f"User attributes: username={user.username}, email={user.email_address}")
+
+        # GET or CREATE for user
         token, created = Token.objects.get_or_create(user = user)
 
 # test response
-        return Response({
+        return Response(
+            {
                 'token': token.key,
-                'username' : User.username,
-                'email_address' : User.email_address,
-            }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+                'username' : user.username, # changed to use the instance not class
+                'email_address' : user.email_address,
+            }, 
+            status=status.HTTP_201_CREATED,)
+
 
 # handles retrieval updating and destroying of user
 class UserRUDView(generics.RetrieveUpdateDestroyAPIView):
