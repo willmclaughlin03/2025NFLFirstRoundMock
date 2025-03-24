@@ -6,6 +6,9 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import UserSerializer
 from .models import User
+from django.contrib.auth.views import LoginView, LogoutView
+
+from django.contrib import messages
 
 # create user view with token auth
 class UserCreateView(generics.CreateAPIView):
@@ -38,6 +41,28 @@ class UserCreateView(generics.CreateAPIView):
                 'email_address' : user.email_address,
             }, 
             status=status.HTTP_201_CREATED,)
+    
+class UserLoginView(LoginView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer 
+    permission_classes = [AllowAny]
+
+    redirect_authenticated_user = True
+
+    def get_success_url(self):
+        #return main_page('draft')
+        return None
+
+    def form_invaid(self, form):
+        messages.error(self.request, 'Invalid Username or Password')
+        return self.render_to_response(self.get_context_data(form=form))
+
+class UserLogoutView(LogoutView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+
 
 
 # handles retrieval updating and destroying of user
