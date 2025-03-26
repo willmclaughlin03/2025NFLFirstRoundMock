@@ -1,5 +1,6 @@
 from django.shortcuts import render
-from rest_framework import generics, status, response
+from rest_framework import generics, status
+from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
@@ -7,11 +8,51 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import UserSerializer
 from .models import User
 from django.contrib.auth.views import LoginView, LogoutView
-
+from django.views.generic import CreateView, UpdateView, DetailView
+from django.urls import reverse_lazy
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class UserSignUpTempView(CreateView):
+    template_name = 'registration/signup.html'
+    model = User
+    serializer_class = UserSerializer
+    success_url = reverse_lazy('login')
+    fields = ['first_name', 'last_name', 'email_address', 'username', 'password']
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        user = form.save()
+        token, created = Token.objects.get_or_create(user = user)
+
+        messages.success(self.request, 'Account created successfully!')
+        return response
+    
+class UserLoginTempView(LoginView):
+    template_name = 'registration/login.html'
+    redirect_authenticated_user = True
+
+    def get_success_url(self):
+        return reverse_lazy('user_profile')
+    
+    def form_invaild(self, form):
+        messages.error(self.request, 'Invalid Username or Password')
+        return super().form_invalid(form)
+    
+class UserProfileView(LoginRequiredMixin, DetailView):
+    template_name = 'registration/user_profile.html'
+    model = User
+    
+    def get_object(self, queryset = None):
+        return self.request.user
+    
+
 
 # create user view with token auth
-class UserCreateView(generics.CreateAPIView):
+class UserCreateAPIView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
@@ -25,13 +66,17 @@ class UserCreateView(generics.CreateAPIView):
         # saves the instance of the user
         user = serializer.save()
 
+        Token.objects.filter(user=user).delete()
+
         # Debugging: Print user details
-        print(f"User created: {user}")
-        print(f"User type: {type(user)}")
-        print(f"User attributes: username={user.username}, email={user.email_address}")
+        #print(f"User created: {user}")
+        #print(f"User type: {type(user)}")
+        #print(f"User attributes: username={user.username}, email={user.email_address}")
 
         # GET or CREATE for user
-        token, created = Token.objects.get_or_create(user = user)
+        token = Token.objects.create(user=user)
+
+        messages.success(self.request, 'Account created successfully!')
 
 # test response
         return Response(
@@ -41,21 +86,6 @@ class UserCreateView(generics.CreateAPIView):
                 'email_address' : user.email_address,
             }, 
             status=status.HTTP_201_CREATED,)
-    
-class UserLoginView(LoginView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer 
-    permission_classes = [AllowAny]
-
-    redirect_authenticated_user = True
-
-    def get_success_url(self):
-        #return main_page('draft')
-        return None
-
-    def form_invaid(self, form):
-        messages.error(self.request, 'Invalid Username or Password')
-        return self.render_to_response(self.get_context_data(form=form))
 
 class UserLogoutView(LogoutView):
     queryset = User.objects.all()
@@ -73,4 +103,18 @@ class UserRUDView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         return self.request.user
+    
+class CustomAuthToken(ObtainAuthToken):
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data = request.data, context = {'request': request})
+        serializer.is_valid(raise_exception = True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user = user)
+
+        return Response({
+            'token': token.key,
+            'user_id': user.pk,
+            'username': user.username,
+            'email_address': user.email_address,
+        })
 

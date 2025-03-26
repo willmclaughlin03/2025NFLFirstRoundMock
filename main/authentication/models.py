@@ -5,8 +5,6 @@ from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
     email_address = models.EmailField(unique=True) 
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
 
     # Add custom related_name to avoid clashes
     groups = models.ManyToManyField(

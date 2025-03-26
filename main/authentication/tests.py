@@ -87,7 +87,7 @@ class RegisterTest(TestCase):
 
         # Check if the user was created in the database
         user_exists = User.objects.filter(username='mynameiswill').exists()
-        self.assertTrue(user_exists)"
+        self.assertTrue(user_exists)
         
 
     def test_register_fail(self):

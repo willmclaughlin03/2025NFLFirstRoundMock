@@ -1,21 +1,23 @@
 from rest_framework import serializers
 
 from authentication.models import User
+from django.contrib.auth import get_user_model
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password
 
+
+User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
 
-    password = serializers.CharField(required = True)
+    password = serializers.CharField(write_only = True, required = True)
+    email_address = serializers.EmailField(required = True)
     class Meta:
         model = User
-        fields = ['first_name', 
-                  'last_name', 
+        fields = [ 
                   'email_address', 
                   'username', 
                   'password',]
-        extra_kwargs = {'password' : {'write_only' : True}}
 
 
         def validate_password(self, value):
@@ -23,31 +25,30 @@ class UserSerializer(serializers.ModelSerializer):
             if len(value) < 6:
                 raise serializers.ValidationError("Password must be longer than 6 characters")
             
+        def validate_email_address(self, value):
+            if User.objects.filter(email_address = value).exists():
+                raise ValidationError("Email is already being used!")
+            return value
+            
 
 
         def create(self, validated_data):
-        # Validate email address
-            email_address = validated_data.get('email_address')
-            try:
-                validate_email(email_address)
-            except ValidationError:
-                raise serializers.ValidationError({"email_address": "Please use a valid email!"})
 
         # Create the user instance
-            user = User(
-                username=validated_data.get('username'),
-                first_name=validated_data.get('first_name'),
-                last_name=validated_data.get('last_name'),
-                email_address=email_address,  # Assign the validated email
-        )
-
-        # Set and hash the password
-            user.set_password(validated_data.get('password'))
+            try:
+                user = User.objects.create_user(
+                username = validated_data['username'],
+                email_address = validated_data['email_address'],
+                password=validated_data['password']
+                
+            )
 
         # Save the user to the database
-            user.save()
+                user.save()
 
-            return user
+                return user
+            except Exception as e:
+                raise serializers.ValidationError(f"An error occurred: {str(e)}")
         
         def update(self, instance, validated_data):
 
