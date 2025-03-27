@@ -1,29 +1,95 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
+from authentication.models import User
 
-# Create your models here.
-
-
-class combine_stats(models.Model):
-    height =  models.FloatField(max_length=5, default= 'null')
-    weight =  models.IntegerField(default= 'null')
-    fourty_time = models.FloatField(max_length= 5, default= 'null')
-    bench_press = models.IntegerField(default= 'null')
-    cone_3 = models.FloatField(max_length = 4, default= 'null')
-    broad_jump = models.FloatField(max_length = 6, default= 'null')
-    vertical_jump = models.FloatField(max_length = 6, default= 'null')
+class CombineStats(models.Model):
+    """Detailed combine performance statistics for a player"""
+    height = models.FloatField(validators=[MinValueValidator(0)], null=True, blank=True)
+    weight = models.IntegerField(validators=[MinValueValidator(0)], null=True, blank=True)
+    forty_yard_dash = models.FloatField(validators=[MinValueValidator(0)], null=True, blank=True)
+    bench_press_reps = models.IntegerField(validators=[MinValueValidator(0)], null=True, blank=True)
+    three_cone_drill = models.FloatField(validators=[MinValueValidator(0)], null=True, blank=True)
+    broad_jump = models.FloatField(validators=[MinValueValidator(0)], null=True, blank=True)
+    vertical_jump = models.FloatField(validators=[MinValueValidator(0)], null=True, blank=True)
+    
+    def __str__(self):
+        return f"Combine Stats for Player"
 
 class Player(models.Model):
-    first_name = models.CharField(max_length = 20, default= 'null')
-    last_name = models.CharField(max_length = 30, default= 'null')
-    ranking = models.IntegerField(default= 2)
-    position = models.CharField(max_length = 4, default= 'null')
-    age = models.IntegerField(default = 20)
-    college = models.CharField(max_length =  30, default= 'null')
-    combine_stats = models.ForeignKey(combine_stats, on_delete = models.CASCADE, default= 'null')
-
+    """Detailed player information for NFL Draft"""
+    POSITION_CHOICES = [
+        ('QB', 'Quarterback'),
+        ('RB', 'Running Back'),
+        ('WR', 'Wide Receiver'),
+        ('TE', 'Tight End'),
+        ('OT', 'Offensive Tackle'),
+        ('OG', 'Offensive Guard'),
+        ('C', 'Center'),
+        ('DE', 'Defensive End'),
+        ('DT', 'Defensive Tackle'),
+        ('LB', 'Linebacker'),
+        ('CB', 'Cornerback'),
+        ('S', 'Safety'),
+        ('K', 'Kicker'),
+        ('P', 'Punter'),
+    ]
+    
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    position = models.CharField(max_length=4, choices=POSITION_CHOICES)
+    age = models.IntegerField(validators=[MinValueValidator(18), MaxValueValidator(40)])
+    college = models.CharField(max_length=100)
+    
+    # Ranking and draft-related fields
+    draft_ranking = models.IntegerField(validators=[MinValueValidator(1)], null=True, blank=True)
+    projected_round = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(7)], null=True, blank=True)
+    
+    # Combine stats relationship
+    combine_stats = models.OneToOneField(CombineStats, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # College performance stats
+    college_touchdowns = models.IntegerField(default=0)
+    college_yards = models.IntegerField(default=0)
+    
     def __str__(self):
-        return self.first_name
+        return f"{self.first_name} {self.last_name} - {self.position}"
 
+class Draft(models.Model):
+    """Represents a user's draft session"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='drafts')
+    draft_date = models.DateTimeField(auto_now_add=True)
+    draft_grade = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(100)], 
+        null=True, 
+        blank=True
+    )
+    is_completed = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"Draft by {self.user.username} on {self.draft_date}"
 
+class DraftPick(models.Model):
+    """Represents an individual draft pick in a draft session"""
+    draft = models.ForeignKey(Draft, on_delete=models.CASCADE, related_name='picks')
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
+    pick_number = models.IntegerField(validators=[MinValueValidator(1)])
+    round_number = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(7)])
+    team_name = models.CharField(max_length=100, blank=True, null=True)
+    player_id = models.IntegerField()
 
+    class Meta:
+        unique_together = ['draft', 'pick_number']
+        ordering = ['round_number', 'pick_number']
+    
+    def __str__(self):
+        return f"Pick {self.pick_number} - {self.player} in {self.draft}"
 
+class PlayerNote(models.Model):
+    """Additional notes or scouting information for players"""
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='notes')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    note_text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Note for {self.player} by {self.user}"
