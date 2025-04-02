@@ -1,13 +1,19 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import PlayerViewSet, DraftViewSet
+from django.urls import path
+from . import views
+from django.contrib.auth.decorators import login_required
 
-router = DefaultRouter()
-router.register(r'players', PlayerViewSet, basename='player')
-router.register(r'drafts', DraftViewSet, basename='draft')
+
 
 urlpatterns = [
-    path('', include(router.urls)),
-    # Optionally add login/logout views for session-based auth
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
+    # Main draft pages
+    path('', views.draft_home, name='draft_home'),
+    path('history/', login_required(views.draft_history), name='draft_history'),
+    
+    # Draft modes
+    path('draft/', views.quick_draft, name='quick_draft'),
+
+    
+    # Draft results and details
+    path('draft/<int:draft_id>/', login_required(views.draft_detail), name='draft_detail'),
+    path('draft/<int:draft_id>/results/', login_required(views.draft_results), name='draft_results'),
 ]

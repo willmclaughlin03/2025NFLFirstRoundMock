@@ -1,0 +1,65 @@
+{% extends 'draft/base.html' %}
+
+{% block content %}
+<div class="draft-home">
+    <h1>Welcome to the 2025 NFL Draft Simulator</h1>
+    <p>Get ready to take control of your favorite NFL team for the first round!</p>
+    
+    <div class="draft-options">
+        <div class="draft-mode-selector">
+            <h2>Select Draft Mode</h2>
+                <!-- Full Draft Mode -->
+        
+
+                <!-- Quick Draft Mode -->
+                <div class="mode-card">
+                    <h3>Quick Draft</h3>
+                    <p>Quickly simulate just the first round.</p>
+                    <a href="{% url 'quick_draft' %}" class="btn">Start Quick Draft</a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Drafts Section -->
+    {% if request.user.is_authenticated %}
+        {% if drafts %}
+            <div class="recent-drafts">
+                <h2>Your Recent Drafts</h2>
+                <table class="draft-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Mode</th>
+                            <th>Grade</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for draft in drafts %}
+                        <tr>
+                            <td>{{ draft.created|date:"Y-m-d" }}</td>
+                            <td>{{ draft.get_mode_display }}</td>
+                            <td>{{ draft.grade|default:"-" }}</td>
+                            <td>
+                                <a href="{% url 'draft_detail' draft.id %}" class="action-link">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="auth-prompt">
+            <h2>Save Your Draft History</h2>
+            <p>Sign in to track your draft results and compare with friends.</p>
+            <div class="auth-actions">
+                <a href="{% url 'login' %}" class="btn primary">Log In</a>
+                <a href="{% url 'register' %}" class="btn secondary">Register</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

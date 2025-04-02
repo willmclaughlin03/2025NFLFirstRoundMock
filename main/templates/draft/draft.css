@@ -1,0 +1,27 @@
+.draft-simulator {
+    display: grid;
+    grid-template-areas: 
+        "header header"
+        "players picks"
+        "actions actions";
+}
+
+.available-players {
+    grid-area: players;
+}
+
+.draft-picks {
+    grid-area: picks;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .draft-simulator {
+        grid-template-areas: 
+            "header"
+            "players"
+            "picks"
+            "actions";
+        grid-template-columns: 1fr;
+    }
+}

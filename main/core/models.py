@@ -37,7 +37,7 @@ class Player(models.Model):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     position = models.CharField(max_length=4, choices=POSITION_CHOICES)
-    age = models.IntegerField(validators=[MinValueValidator(18), MaxValueValidator(40)])
+    age = models.IntegerField(validators=[MinValueValidator(18), MaxValueValidator(30)])
     college = models.CharField(max_length=100)
     
     # Ranking and draft-related fields
@@ -56,6 +56,17 @@ class Player(models.Model):
 
 class Draft(models.Model):
     """Represents a user's draft session"""
+    DRAFT_PICKS = [1,2,3,4,5,6,7,8,9,10,11,12, 13,14,15,16,17,18,19,20, 21,22,23,24,25,26,27,28,29,30,31,32]
+    TEAM_NAMES = [
+    "Tennessee Titans","Cleveland Browns","New York Giants","New England Patriots",
+    "Jacksonville Jaguars","Las Vegas Raiders","New York Jets","Carolina Panthers",
+    "New Orleans Saints","Chicago Bears","San Francisco 49ers","Dallas Cowboys",
+    "Miami Dolphins","Indianapolis Colts","Atlanta Falcons","Arizona Cardinals",
+    "Cincinnati Bengals","Seattle Seahawks","Tampa Bay Buccaneers","Denver Broncos",
+    "Pittsburgh Steelers","Los Angeles Chargers","Green Bay Packers","Minnesota Vikings",
+    "Houston Texans","Los Angeles Rams","Baltimore Ravens","Detroit Lions",
+    "Washington Commanders","Buffalo Bills","Kansas City Chiefs","Philadelphia Eagles"
+]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='drafts')
     draft_date = models.DateTimeField(auto_now_add=True)
     draft_grade = models.IntegerField(
@@ -75,7 +86,6 @@ class DraftPick(models.Model):
     pick_number = models.IntegerField(validators=[MinValueValidator(1)])
     round_number = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(7)])
     team_name = models.CharField(max_length=100, blank=True, null=True)
-    player_id = models.IntegerField()
 
     class Meta:
         unique_together = ['draft', 'pick_number']
