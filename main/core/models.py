@@ -42,14 +42,14 @@ class Player(models.Model):
     
     # Ranking and draft-related fields
     draft_ranking = models.IntegerField(validators=[MinValueValidator(1)], null=True, blank=True)
-    projected_round = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(7)], null=True, blank=True)
+    #projected_round = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(7)], null=True, blank=True)
     
     # Combine stats relationship
-    combine_stats = models.OneToOneField(CombineStats, on_delete=models.SET_NULL, null=True, blank=True)
+    #combine_stats = models.OneToOneField(CombineStats, on_delete=models.SET_NULL, null=True, blank=True)
     
     # College performance stats
-    college_touchdowns = models.IntegerField(default=0)
-    college_yards = models.IntegerField(default=0)
+    #college_touchdowns = models.IntegerField(default=0)
+    #college_yards = models.IntegerField(default=0)
     
     def __str__(self):
         return f"{self.first_name} {self.last_name} - {self.position}"
@@ -75,13 +75,15 @@ class Draft(models.Model):
         blank=True
     )
     is_completed = models.BooleanField(default=False)
+    new = models.BooleanField(default = False)
+    selected_player = models.ForeignKey('DraftPick', on_delete=models.CASCADE, null=True, blank=True, related_name='selected_in_draft')
     
     def __str__(self):
         return f"Draft by {self.user.username} on {self.draft_date}"
 
 class DraftPick(models.Model):
     """Represents an individual draft pick in a draft session"""
-    draft = models.ForeignKey(Draft, on_delete=models.CASCADE, related_name='picks')
+    draft = models.ForeignKey(Draft, on_delete=models.CASCADE, related_name='draft_picks')
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
     pick_number = models.IntegerField(validators=[MinValueValidator(1)])
     round_number = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(7)])

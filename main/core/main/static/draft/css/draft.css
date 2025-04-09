@@ -1,0 +1,59 @@
+/* Custom styles for the NFL Draft Simulator */
+
+/* General styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Navbar styles */
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Draft card styles */
+.draft-card {
+    transition: transform 0.2s;
+}
+
+.draft-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Player list styles */
+.player-list-item {
+    border-left: 4px solid transparent;
+    transition: all 0.2s;
+}
+
+.player-list-item:hover {
+    background-color: #f8f9fa;
+    border-left-color: #0d6efd;
+}
+
+/* Draft board styles */
+.draft-board {
+    border: 2px solid #dee2e6;
+    border-radius: 0.5rem;
+}
+
+.draft-pick {
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem;
+}
+
+.draft-pick:last-child {
+    border-bottom: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .draft-board {
+        margin-top: 1rem;
+    }
+} 

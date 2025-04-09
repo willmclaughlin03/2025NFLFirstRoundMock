@@ -43,6 +43,6 @@ class DraftSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Draft
-        fields = ['id', 'user', 'draft_date', 'draft_grade', 'is_completed', 'picks', 'team_name', 'draft_picks']
+        fields = ['id', 'user', 'draft_date', 'draft_grade', 'is_completed', 'picks', 'TEAM_NAMES', 'DRAFT_PICKS']
 
         read_only_fields = ['user', 'draft_date', 'draft_grade']

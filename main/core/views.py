@@ -1,35 +1,24 @@
-from MySQLdb import DatabaseError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.views import APIView
-from .serializers import PlayerSerializer
-from .models import Player, Draft, DraftPick, CombineStats
-from rest_framework.authentication import TokenAuthentication, SessionAuthentication
-from rest_framework.permissions import IsAuthenticated, AllowAny
-
-from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
+from rest_framework import viewsets, status
+from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.authentication import (SessionAuthentication, 
+                                         BasicAuthentication, 
+                                         TokenAuthentication)
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Player, Draft, DraftPick
 from .serializers import PlayerSerializer, DraftSerializer, DraftPickSerializer
-from django.contrib.auth.views import LoginView, LogoutView
-from django.urls import reverse_lazy
-from authentication.models import User
-from authentication.views import UserSignUpTempView, UserLoginTempView
-
 
 class PlayerViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Player.objects.all()
     serializer_class = PlayerSerializer
     authentication_classes = [SessionAuthentication, BasicAuthentication]
-    permission_classes = [IsAuthenticated]
+    #permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Filter players based on query parameters
-        queryset = Player.objects.all()
+        queryset = super().get_queryset()
         position = self.request.query_params.get('position')
         if position:
             queryset = queryset.filter(position=position)
@@ -38,47 +27,62 @@ class PlayerViewSet(viewsets.ReadOnlyModelViewSet):
 class DraftViewSet(viewsets.ModelViewSet):
     serializer_class = DraftSerializer
     authentication_classes = [SessionAuthentication, BasicAuthentication]
-    permission_classes = [IsAuthenticated]
+    #permission_classes = [IsAuthenticated]
 
+
+    # filters players by their position if specified
     def get_queryset(self):
-        # Only return drafts for the current user
         return Draft.objects.filter(user=self.request.user)
 
+    # assigns the current user to the new drafts taking place
     def perform_create(self, serializer):
-        # Automatically assign current user
         serializer.save(user=self.request.user)
 
-    @action(detail=True, methods=['POST'])
-    def add_pick(self, request, pk=None):
+    # uses get method to get the current status of draft and the next picks
+    @action(detail=True, methods=['get'])
+    def status(self, request, pk=None):
+    
         draft = self.get_object()
-        # Prepare serializer context
-        context = {
-            'draft': draft
-        }
-        # Create draft pick serializer with context
-        serializer = DraftPickSerializer(
-            data=request.data,
-            context=context
-        )
-        if serializer.is_valid():
-            # Save draft pick
-            draft_pick = serializer.save(
-                draft=draft,
-                player=serializer.validated_data['player_id']
-            )
-            return Response({
-                'status': 'pick added',
-                'pick': DraftPickSerializer(draft_pick).data
-            }, status=status.HTTP_201_CREATED)
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response(self._get_draft_status(draft))
+    
+    # Lists the undrafted players
+    @action(detail=True, methods=['get'])
+    def available_players(self, request, pk=None):
 
-    @action(detail=True, methods=['POST'])
-    def complete_draft(self, request, pk=None):
         draft = self.get_object()
-        # Calculate draft grade (similar to previous implementation)
+        available_players = Player.objects.exclude(
+            id__in=draft.draftpicks.values_list('player__id', flat=True)
+        ).order_by('draft_ranking')
+        
+        return Response({
+            'count': available_players.count(),
+            'players': PlayerSerializer(available_players, many=True).data
+        })
+
+    # adds the player to your draft
+    @action(detail=True, methods=['post'])
+    def add_pick(self, request, pk=None):
+        """Add a player to the draft"""
+        draft = self.get_object()
+        
+        if draft.is_completed:
+            return self._draft_completed_response()
+        
+        pick_number = self._validate_pick_number(request)
+        if isinstance(pick_number, Response):
+            return pick_number
+        
+        serializer = self._create_pick_serializer(draft, request)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        return self._process_valid_pick(draft, pick_number, serializer)
+    
+    # finalizes the draft for the user and calculates their grade
+    @action(detail=True, methods=['post'])
+    def complete_draft(self, request, pk=None):
+        """Mark draft as completed and calculate grade"""
+        draft = self.get_object()
         draft_grade = self._calculate_draft_grade(draft)
         draft.is_completed = True
         draft.draft_grade = draft_grade
@@ -88,8 +92,82 @@ class DraftViewSet(viewsets.ModelViewSet):
             'draft_grade': draft_grade
         })
 
+    # Helper methods
+    # calculates the current draft state and pick status
+    def _get_draft_status(self, draft):
+        #draft_picks = draft.DRAFT_PICKS.sort()
+        draft_picks = DraftPick.objects.filter(draft=draft).order_by('pick_number')
+        current_pick = next(
+            (pick for pick in Draft.DRAFT_PICKS 
+             if not draft_picks.filter(pick_number=pick).exists()),
+            None
+        )
+        
+        return {
+            'is_completed': draft.is_completed,
+            'current_pick': current_pick,
+            'team_name': Draft.TEAM_NAMES[current_pick - 1] if current_pick else None,
+            'completed_picks': DraftPickSerializer(draft_picks, many=True).data
+        }
+
+    # checks if the draft has already occured 
+    def _draft_completed_response(self):
+        return Response({
+            'status': 'error',
+            'message': 'This draft has already been completed'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # makes sure the pick number is correct at all times
+    def _validate_pick_number(self, request):
+        try:
+            pick_number = request.data.get('pick_number')
+            if not pick_number or pick_number not in Draft.DRAFT_PICKS:
+                raise ValueError
+            return pick_number
+        except (ValueError, TypeError):
+            return Response({
+                'status': 'error',
+                'message': 'Invalid pick number'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    # handles all the pick serializer validations and creation validation
+    def _create_pick_serializer(self, draft, request):
+        return DraftPickSerializer(
+            data=request.data,
+            context={
+                'draft': draft,
+                'available_players': Player.objects.all().order_by('draft_ranking')
+            }
+        )
+
+    # finishes the pick process by validaing the pick one last time
+    def _process_valid_pick(self, draft, pick_number, serializer):
+        player = serializer.validated_data['player_id']
+        team_name = Draft.TEAM_NAMES[pick_number - 1]
+        
+        draft_pick = serializer.save(
+            draft=draft,
+            pick_number=pick_number,
+            round_number=1,
+            team_name=team_name,
+            player=player
+        )
+        
+        if pick_number == Draft.DRAFT_PICKS[-1]:
+            draft.is_completed = True
+            draft.save()
+            return Response({
+                'status': 'draft completed',
+                'pick': DraftPickSerializer(draft_pick).data
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response({
+            'status': 'pick added',
+            'pick': DraftPickSerializer(draft_pick).data
+        }, status=status.HTTP_201_CREATED)
+
+    # scoring of draft method
     def _calculate_draft_grade(self, draft):
-        # Draft grade calculation logic
         draft_picks = DraftPick.objects.filter(draft=draft)
         total_points = sum(
             10 if abs(pick.player.draft_ranking - pick.pick_number) <= 5 else
@@ -99,160 +177,59 @@ class DraftViewSet(viewsets.ModelViewSet):
         )
         return min(max(round((total_points / 100) * 100), 0), 100)
 
-# All are allowed to the draft home page
 
 
-@api_view(['GET'])
-@authentication_classes([TokenAuthentication, SessionAuthentication])
-@permission_classes([AllowAny])
+# Template Views
 def draft_home(request):
-
-        # Check if the user is authenticated
+    """Render the draft home page"""
+    context = {}
     if request.user.is_authenticated:
-            # Get the user's drafts
-        drafts = Draft.objects.filter(user=request.user).order_by('-draft_date')[:3]
-
-    
-    return render(request, 'draft/draft_home.html')
-
-@api_view(['GET', 'POST'])
-@permission_classes([AllowAny])
-def quick_draft(request):
-    # Create a new draft object
-
-    if request.method == 'GET':
-        return render(request, 'draft/quick_draft.html')
-    
-    if request.method == 'POST':
-        draft = Draft.objects.create(
-            user = request.user,
-            is_completed = False,
-        )
-        while draft.is_completed == False:
-            available_players = Player.objects.all().order_by('draft_ranking')
-
-            for pick_number in Draft.DRAFT_PICKS:
-                    TEAM_NAMES = Draft.TEAM_NAMES[pick_number - 1]  # Get the team name based on the pick number
-                    draft_pick = DraftPick.objects.create(
-                        draft=draft,
-                        player=available_players,
-                        pick_number=pick_number,
-                        round_number=1,  # Quick draft has only 1 round
-                        team_name=TEAM_NAMES,
-                    )
-
-                    available_players = available_players.exclude(id=draft_pick.player.id)
-                    draft_pick.save()
-
-                    if pick_number == Draft.DRAFT_PICKS[-1]:  # Check if it's the last pick
-                        draft.is_completed = True  # Mark the draft as completed after all picks are made
-                        draft.save()
-                        break
-                    
-
-    
-    # Get available players for the draft
-    available_players = Player.objects.all().order_by('draft_ranking')
-    
-    context = {
-        'draft': draft,
-        'available_players': Player.objects.all().order_by('draft_ranking'),
-        'rounds': 1,  # Quick draft has only 1 round
-    }
-    
-    return render(request, 'draft/draft_simulator.html', context)
+        context['drafts'] = Draft.objects.filter(
+            user=request.user
+        ).order_by('-draft_date')[:3]
+    # Add top prospects to context
+    context['top_prospects'] = Player.objects.all().order_by('draft_ranking')[:10]
+    return render(request, 'draft/draft_home.html', context)
 
 
 @login_required
-def draft_detail(request, draft_id):
-    draft = get_object_or_404(Draft, id=draft_id, user=request.user)
-    picks = DraftPick.objects.filter(draft=draft).order_by('round_number', 'pick_number')
+def draft_detail(request, draft_id = None):
+
+
+    """Render the draft detail page"""
+    if draft_id == 'new':
+        context = {
+            'is_new' : True,
+            'available_players' : Player.objects.all().order_by('draft_ranking')
+
+        }
+        return render(request, 'draft/draft_detail.html', context)
     
+    draft = get_object_or_404(Draft, id = draft_id, user=request.user)
     context = {
         'draft': draft,
-        'picks': picks
+        'picks': draft.DRAFT_PICKS.sort(),
     }
+    
+    if not draft.is_completed:
+        # Add draft status for in-progress drafts
+        status_data = DraftViewSet()._get_draft_status(draft)
+        context.update({
+            'current_pick': status_data['current_pick'],
+            'current_team': status_data['team_name'],
+            'available_players': Player.objects.exclude(
+                id__in=draft.draft_picks.values_list('player__id', flat=True)  # flagged for change, may need changing (players back to draftpicks)
+            ).order_by('draft_ranking')
+        })
     
     return render(request, 'draft/draft_detail.html', context)
 
 @login_required
 def draft_results(request, draft_id):
+    """Render the draft results page"""
     draft = get_object_or_404(Draft, id=draft_id, user=request.user)
-    
-    # Make sure the draft is completed
     if not draft.is_completed:
         messages.error(request, 'This draft has not been completed yet.')
         return redirect('draft_detail', draft_id=draft_id)
     
-    context = {
-        'draft': draft
-    }
-    
-    return render(request, 'draft/draft_results.html', context)
-
-@api_view(['POST'])
-def PicksLogic(draft, request):
-
-    if request.method == 'POST':
-        try:
-            player = get_object_or_404(Player, id = player)
-            draft_pick = get_object_or_404(DraftPick, pick_number = pick_number)
-            draft_round = get_object_or_404(DraftPick, round_number = round_number)
-            team = get_object_or_404(Player, team_name = team_name)  # potentially change to a specific team model
-
-            draft_pick = DraftPick.objects.create(
-                draft=draft,
-                player=player,
-                pick_number= pick_number,
-                round_number=round_number,
-                team_name=team_name,)
-            
-            serializer = DraftPickSerializer(draft_pick, many = True)
-
-            # Save the draft pick to the database
-
-            draft_pick.save()
-            return Response({'status': 'success', 'draft_pick_id': draft_pick.id}, status=status.HTTP_201_CREATED)
-        except ValueError:
-            return Response({'error': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
-    
-@api_view(['GET'])
-@authentication_classes([TokenAuthentication, SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def draft_history(request):
-        try: 
-            response = Draft.objects.filter(user = request.user).order_by('-draft_date')
-            serializer = DraftSerializer(response, many=True)
-
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except DatabaseError as e:
-            return Response({'error': 'server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-'''
-@api_view(['GET', 'POST'])
-@authentication_classes([TokenAuthentication, SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def full_draft(request):
-
-    try:
-    # Create a new draft object
-        draft = Draft.objects.create(
-            user=request.user,
-            mode='full',
-            is_completed=False
-        )
-
-        context = {
-            'draft': draft,
-            'available_players': Player.objects.all().order_by('draft_ranking'),
-            'rounds': 7,  # Full draft has 7 rounds
-        }
-
-        
-
-    
-        return render(request, 'draft/draft_simulator.html', context)
-    # Handle any database errors
-    except DatabaseError as e:
-        return Response({'error': 'server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-'''
+    return render(request, 'draft/draft_results.html', {'draft': draft})

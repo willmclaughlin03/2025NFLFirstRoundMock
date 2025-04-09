@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Draft #{{ draft.id }} - NFL Draft Simulator{% endblock %}
+
+{% block extra_head %}
+<style>
+    .draft-board {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .draft-slot {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: center;
+        min-height: 100px;
+        position: relative;
+    }
+    .draft-slot.current {
+        background-color: #e3f2fd;
+        border-color: #2196f3;
+    }
+    .draft-slot.completed {
+        background-color: #f5f5f5;
+    }
+    .player-card {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .player-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .team-pick {
+        font-size: 0.8em;
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">Draft #{{ draft.id }}</h1>
+            
+            {% if not draft.is_started %}
+                <div class="alert alert-info">
+                    <h4 class="alert-heading">Ready to Start?</h4>
+                    <p>Click the button below to begin the draft simulation.</p>
+                    <form method="post" action="{% url 'start_draft' draft.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary">Start Draft</button>
+                    </form>
+                </div>
+            {% else %}
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Current Pick</h5>
+                            </div>
+                            <div class="card-body">
+                                <h4>{{ current_team.name }}</h4>
+                                <p class="mb-0">Pick #{{ current_pick_number }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Draft Progress</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ draft_progress }}%">
+                                        {{ draft_progress }}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="draft-board">
+                    {% for pick in draft_picks %}
+                        <div class="draft-slot {% if pick.is_current %}current{% elif pick.is_completed %}completed{% endif %}">
+                            <div class="pick-number">#{{ pick.number }}</div>
+                            <div class="team-name">{{ pick.team.name }}</div>
+                            {% if pick.is_completed %}
+                                <div class="player-name">{{ pick.player.first_name }} {{ pick.player.last_name }}</div>
+                                <div class="player-position">{{ pick.player.position }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Available Players</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for player in available_players %}
+                                        <div class="col-md-4 mb-3">
+                                            <div class="card player-card" onclick="selectPlayer({{ player.id }})">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">{{ player.first_name }} {{ player.last_name }}</h6>
+                                                    <p class="card-text">
+                                                        <small class="text-muted">{{ player.position }} - {{ player.college }}</small>
+                                                    </p>
+                                                    <p class="card-text">
+                                                        <small>Rank: #{{ player.draft_ranking }}</small>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Team Needs</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group">
+                                    {% for need in current_team.needs %}
+                                        <li class="list-group-item">{{ need }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<form id="draftForm" method="post" action="{% url 'make_pick' draft.id %}">
+    {% csrf_token %}
+    <input type="hidden" name="player_id" id="selectedPlayerId">
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectPlayer(playerId) {
+    document.getElementById('selectedPlayerId').value = playerId;
+    document.getElementById('draftForm').submit();
+}
+</script>
+{% endblock %} 

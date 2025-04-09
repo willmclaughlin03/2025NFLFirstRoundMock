@@ -1,4 +1,4 @@
-{% extends 'draft/base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}NFL Draft Simulator{% endblock %}
@@ -61,7 +61,7 @@
                 </div>
                 <div class="card-body">
                     <div class="list-group">
-                        {% for player in Player %}
+                        {% for player in top_prospects %}
                             <div class="list-group-item">
                                 <div class="d-flex w-100 justify-content-between">
                                     <h6 class="mb-1">{{ player.first_name }} {{ player.last_name }}</h6>
@@ -76,4 +76,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
+{% endblock %} 
