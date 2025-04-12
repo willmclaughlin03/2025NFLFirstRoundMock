@@ -43,7 +43,7 @@
         button:hover {
             background-color: #0056b3;
         }
-        #error-message {
+        .error-message {
             color: red;
             margin-bottom: 15px;
             text-align: center;
@@ -51,67 +51,30 @@
     </style>
 </head>
 <body>
-    <form id="login-form" class="login-form">
+    <form method="post" action="{% url 'login' %}" class="login-form">
+        {% csrf_token %}
         <h2>Login</h2>
-        <div id="error-message"></div>
+
+        {% if form.errors %}
+            <div class="error-message">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
         <input 
             type="text" 
-            id="username" 
             name="username" 
             placeholder="Username" 
             required
+            value="{{ form.username.value|default_if_none:'' }}"
         >
         <input 
             type="password" 
-            id="password" 
             name="password" 
             placeholder="Password" 
             required
         >
         <button type="submit">Login</button>
     </form>
-
-    <script>
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const errorMessageEl = document.getElementById('error-message');
-            errorMessageEl.textContent = '';
-
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            try {
-                const response = await fetch('/api-token-auth/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        username: username,
-                        password: password
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    // Successfully authenticated
-                    // Store the token (you might want to use more secure storage like HttpOnly cookies)
-                    localStorage.setItem('authToken', data.token);
-                    
-                    // Redirect to dashboard or home page
-                    window.location.href = '/dashboard/';
-                } else {
-                    // Handle authentication error
-                    errorMessageEl.textContent = data.non_field_errors 
-                        || data.detail 
-                        || 'Invalid username or password';
-                }
-            } catch (error) {
-                errorMessageEl.textContent = 'An error occurred. Please try again.';
-                console.error('Login error:', error);
-            }
-        });
-    </script>
 </body>
 </html>

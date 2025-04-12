@@ -77,6 +77,7 @@ class Draft(models.Model):
     is_completed = models.BooleanField(default=False)
     new = models.BooleanField(default = False)
     selected_player = models.ForeignKey('DraftPick', on_delete=models.CASCADE, null=True, blank=True, related_name='selected_in_draft')
+    player_id = models.ForeignKey('Player', on_delete=models.CASCADE, null=True, blank=True, related_name='selected_in_draft')
     
     def __str__(self):
         return f"Draft by {self.user.username} on {self.draft_date}"

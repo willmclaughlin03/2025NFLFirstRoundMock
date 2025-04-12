@@ -142,7 +142,16 @@ class DraftViewSet(viewsets.ModelViewSet):
 
     # finishes the pick process by validaing the pick one last time
     def _process_valid_pick(self, draft, pick_number, serializer):
-        player = serializer.validated_data['player_id']
+        player_id = self.request.data.get('player_id')
+
+        if not player_id:
+            return Response({'error'  'Player ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            player = Player.objects.get(id=player_id)
+        except Player.DoesNotExist:
+            return Response({'error': 'Player not found'}, status=status.HTTP_404_NOT_FOUND)
+        
         team_name = Draft.TEAM_NAMES[pick_number - 1]
         
         draft_pick = serializer.save(

@@ -5,8 +5,8 @@ from .views import (
     UserProfileView, 
     UserCreateAPIView, 
     UserRUDView, 
-    CustomAuthToken,
-    UserLogoutView
+    UserLogoutView,
+    #CustomAuthToken,
 )
 
 urlpatterns = [
@@ -19,5 +19,6 @@ urlpatterns = [
     # API views
     path('api/register/', UserCreateAPIView.as_view(), name='user-create'),
     path('api/user/', UserRUDView.as_view(), name='user-detail'),
-    path('api/token/', CustomAuthToken.as_view(), name='api-token'),
+    #path('api/token/auth/', CustomAuthToken.as_view(), name='api_token_auth'),
+
 ]

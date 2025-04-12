@@ -48,6 +48,10 @@ INSTALLED_APPS = [
 ]
 AUTH_USER_MODEL = 'authentication.User'
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend', 
+]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -117,7 +121,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
 }
-LOGIN_REDIRECT_URL = 'user_profile'
+LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = 'login'
 
 

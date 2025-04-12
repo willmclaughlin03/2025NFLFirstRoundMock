@@ -3,7 +3,7 @@ from rest_framework import generics, status
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from rest_framework.authentication import TokenAuthentication
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import UserSerializer
 from .models import User
@@ -36,7 +36,7 @@ class UserLoginTempView(LoginView):
     redirect_authenticated_user = True
 
     def get_success_url(self):
-        return reverse_lazy('user_profile')
+        return reverse_lazy('draft_home')
     
     def form_invaild(self, form):
         messages.error(self.request, 'Invalid Username or Password')
@@ -91,7 +91,7 @@ class UserLogoutView(LogoutView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
-
+    success_url = reverse_lazy('login')
 
 
 
@@ -103,14 +103,23 @@ class UserRUDView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         return self.request.user
-    
+
+'''
+#removed for session auth
 class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data = request.data, context = {'request': request})
-        serializer.is_valid(raise_exception = True)
+        
+        #Debug
+        #print("Request data:", request.data)  
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        if not serializer.is_valid():
+
+            print("Validation errors:", serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
         user = serializer.validated_data['user']
         token, created = Token.objects.get_or_create(user = user)
 
+    
         return Response({
             'token': token.key,
             'user_id': user.pk,
@@ -118,3 +127,4 @@ class CustomAuthToken(ObtainAuthToken):
             'email_address': user.email_address,
         })
 
+'''

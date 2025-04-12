@@ -227,7 +227,8 @@
                     },
                     body: JSON.stringify({
                         player_id: selectedPlayerId,
-                        pick_number: selectedPickNumber
+                        pick_number: selectedPickNumber,
+                        round_number: 1
                     })
                 });
                 
@@ -266,7 +267,7 @@
                         window.location.reload();
                     }
                 } else {
-                    alert('Error: ' + data.message);
+                    alert('Error: ' + (data.message || 'Failed to add pick'));
                 }
             } catch (error) {
                 console.error('Error:', error);

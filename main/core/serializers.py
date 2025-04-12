@@ -8,7 +8,7 @@ class CombineStatsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class PlayerSerializer(serializers.ModelSerializer):
-    combine_stats = CombineStatsSerializer(required=False, read_only = True)
+    #combine_stats = CombineStatsSerializer(required=False, read_only = True)
 
     class Meta:
         model = Player
@@ -17,12 +17,13 @@ class PlayerSerializer(serializers.ModelSerializer):
             'first_name', 
             'last_name', 'position', 
             'age', 'college', 
-            'draft_ranking', 'projected_round', 
-            'combine_stats', 'college_touchdowns', 
-            'college_yards']
+            'draft_ranking']
         
 class DraftPickSerializer(serializers.ModelSerializer):
     player = PlayerSerializer(read_only=True)
+
+    player_id = serializers.PrimaryKeyRelatedField(queryset=Player.objects.all(), 
+                                                   source='player', write_only=True)
 
     class Meta:
         model = DraftPick
