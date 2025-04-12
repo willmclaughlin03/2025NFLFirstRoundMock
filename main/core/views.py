@@ -94,7 +94,7 @@ class DraftViewSet(viewsets.ModelViewSet):
 
     # Helper methods
     # calculates the current draft state and pick status
-    def _get_draft_status(self, draft):
+    def _get_draft_status(self, draft, TEAM_NAMES = Draft.TEAM_NAMES, TEAM_NEEDS = Draft.TEAM_NEEDS):
         #draft_picks = draft.DRAFT_PICKS.sort()
         draft_picks = DraftPick.objects.filter(draft=draft).order_by('pick_number')
         current_pick = next(
@@ -207,9 +207,15 @@ def draft_detail(request, draft_id = None):
 
     """Render the draft detail page"""
     if draft_id == 'new':
+        current_pick = 1
+        current_team = list(Draft.TEAM_NEEDS.keys())[0]
         context = {
             'is_new' : True,
-            'available_players' : Player.objects.all().order_by('draft_ranking')
+            'available_players' : Player.objects.all().order_by('draft_ranking'),
+            'team_needs' : Draft.TEAM_NEEDS,
+            'current_pick': current_pick,
+            'current_team': current_team,
+
 
         }
         return render(request, 'draft/draft_detail.html', context)
@@ -218,6 +224,7 @@ def draft_detail(request, draft_id = None):
     context = {
         'draft': draft,
         'picks': draft.DRAFT_PICKS.sort(),
+        'team_needs' : Draft.TEAM_NEEDS,
     }
     
     if not draft.is_completed:
@@ -226,6 +233,7 @@ def draft_detail(request, draft_id = None):
         context.update({
             'current_pick': status_data['current_pick'],
             'current_team': status_data['team_name'],
+            'team_needs': Draft.TEAM_NEEDS,
             'available_players': Player.objects.exclude(
                 id__in=draft.draft_picks.values_list('player__id', flat=True)  # flagged for change, may need changing (players back to draftpicks)
             ).order_by('draft_ranking')

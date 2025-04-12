@@ -67,6 +67,40 @@ class Draft(models.Model):
     "Houston Texans","Los Angeles Rams","Baltimore Ravens","Detroit Lions",
     "Washington Commanders","Buffalo Bills","Kansas City Chiefs","Philadelphia Eagles"
 ]
+    TEAM_NEEDS = {
+        "Tennessee Titans" : ['QB', 'CB', 'WR', 'OT', 'DE'],
+        "Cleveland Browns" : ['QB', 'OT', 'WR', 'HB', 'CB'],
+        "New York Giants" : ['QB', 'OT', 'OG', 'CB', 'S'],
+        "New England Patriots" : ['OT', 'OG', 'WR', 'HB', 'DT'],
+        "Jacksonville Jaguars" : ['OT', 'OG', 'CB', 'LB', 'HB'],
+        "Las Vegas Raiders" : ['WR', 'CB', 'LB', 'HB', 'S'],
+        "New York Jets" : ['QB', 'OT', 'DE', 'CB', 'WR'],
+        "Carolina Panthers" : ['DE', 'CB', 'LB', 'WR', ''],
+        "New Orleans Saints" : ['QB', 'OG', 'DT', 'LB', 'WR'],
+        "Chicago Bears" : ['OT', 'S', 'HB', 'CB', 'TE'],
+        "San Francisco 49ers" : ['OG', 'DT', 'CB', 'DE', 'OT'],
+        "Dallas Cowboys" : ['WR', 'DT', 'OG', 'LB', 'HB'],
+        "Miami Dolphins" : ['OG', 'OT', 'C', 'DT', 'S'],
+        "Indianapolis Colts" : ['OT', 'DE', 'S', 'TE', 'OG'],
+        "Atlanta Falcons" : ['DE', 'S', 'DT', 'LB', 'CB'],
+        "Arizona Cardinals" : ['CB', 'DT', 'OG', 'OT', 'DE'],
+        "Cincinnati Bengals" : ['OT', 'OG', 'CB', 'LB', 'S'],
+        "Seattle Seahawks" : ['QB', 'OT', 'OG', 'DE', 'CB'],
+        "Tampa Bay Buccaneers" : ['DE', 'OG', 'CB', 'LB', 'WR'], 
+        "Denver Broncos" : ['WR', 'CB', 'DT', 'C', 'S'],
+        "Pittsburgh Steelers" : ['QB', 'OT', 'DT', 'CB', 'LB'],
+        "Los Angeles Chargers" : ['WR', 'OG', 'C', 'CB', 'DT'],
+        "Green Bay Packers" : ['WR', 'CB', 'DE', 'DT', 'LB'],
+        "Minnesota Vikings" : ['CB', 'LB', 'S', 'OT', 'DE'],
+        "Houston Texans" : ['OT', 'OG', 'C', 'WR', 'TE'],
+        "Los Angeles Rams" : ['CB', 'S', 'OG', 'OT', 'LB'],
+        "Baltimore Ravens" : ['WR', 'OG', 'DE', 'LB', 'S'],
+        "Detroit Lions" : ['DE', 'DT', 'CB', 'OG', 'WR'],
+        "Washington Commanders" : ['OG', 'C', 'DT', 'LB', 'CB'],
+        "Buffalo Bills" : ['WR', 'CB', 'S', 'LB', 'DT'],
+        "Kansas City Chiefs" : ['OT', 'OG', 'CB', 'DE', 'DT'],
+        "Philadelphia Eagles" : ['C', 'OG', 'DE', 'LB', 'TE'],}
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='drafts')
     draft_date = models.DateTimeField(auto_now_add=True)
     draft_grade = models.IntegerField(

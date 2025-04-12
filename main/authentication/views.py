@@ -91,7 +91,7 @@ class UserLogoutView(LogoutView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
-    success_url = reverse_lazy('login')
+    next_page = reverse_lazy('login')
 
 
 
