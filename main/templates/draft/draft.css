@@ -14,6 +14,77 @@
     grid-area: picks;
 }
 
+.draft-results-container {
+    padding: 30px 0;
+}
+
+.draft-results-container h1 {
+    color: #1a3a5f;
+    margin-bottom: 0.5rem;
+}
+
+.draft-results-container .card {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.draft-results-container .table {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.draft-results-container .table th {
+    font-weight: 600;
+}
+
+.draft-results-container tr:hover {
+    background-color: rgba(0, 123, 255, 0.05) !important;
+}
+
+/* Value indicators */
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+
+.badge.bg-info {
+    background-color: #17a2b8 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+/* Draft grade styles */
+.draft-grade-a {
+    color: #28a745;
+}
+
+.draft-grade-b {
+    color: #17a2b8;
+}
+
+.draft-grade-c {
+    color: #ffc107;
+}
+
+.draft-grade-d {
+    color: #dc3545;
+}
+
+/* Button styles */
+.btn-group {
+    margin-top: 1.5rem;
+}
+
+.btn-group .btn {
+    padding: 0.75rem 1.5rem;
+    margin: 0 0.5rem;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .draft-simulator {

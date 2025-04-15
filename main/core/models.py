@@ -55,6 +55,7 @@ class Player(models.Model):
         return f"{self.first_name} {self.last_name} - {self.position}"
 
 class Draft(models.Model):
+
     """Represents a user's draft session"""
     DRAFT_PICKS = [1,2,3,4,5,6,7,8,9,10,11,12, 13,14,15,16,17,18,19,20, 21,22,23,24,25,26,27,28,29,30,31,32]
     TEAM_NAMES = [
@@ -112,6 +113,25 @@ class Draft(models.Model):
     new = models.BooleanField(default = False)
     selected_player = models.ForeignKey('DraftPick', on_delete=models.CASCADE, null=True, blank=True, related_name='selected_in_draft')
     player_id = models.ForeignKey('Player', on_delete=models.CASCADE, null=True, blank=True, related_name='selected_in_draft')
+
+    def get_grade_feedback(self):
+    
+        if self.draft_grade is None:
+            return "Draft not graded yet"
+    
+        if self.draft_grade >= 90:
+            return "Outstanding draft! You maximized value at nearly every pick."
+        elif self.draft_grade >= 80:
+            return "Great draft! You found excellent value throughout your selections."
+        elif self.draft_grade >= 70:
+            return "Good draft with solid value. A few picks could have been better optimized."
+        elif self.draft_grade >= 60:
+            return "Decent draft with some good selections, but room for improvement."
+        elif self.draft_grade >= 50:
+            return "Average draft. Some good picks mixed with some reaches."
+        else:
+            return "Below average draft. Consider focusing more on player value in future drafts."
+    
     
     def __str__(self):
         return f"Draft by {self.user.username} on {self.draft_date}"

@@ -1,45 +1,103 @@
-{% extends 'base.html' %}
+{% extends 'draft/base.html' %}
+
+{% load custom_tags %}
+
+{% block title %}Draft Results{% endblock %}
 
 {% block content %}
-<div class="draft-results">
-    <h1>Draft Results</h1>
-    
-    <div class="draft-summary">
-        <div class="draft-grade">
-            <h2>Your Draft Grade: {{ draft.draft_grade }}</h2>
-            <p>{{ draft.get_grade_feedback }}</p>
-        </div>
-
-        <div class="drafted-players">
-            <h2>Your Drafted Team</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Round</th>
-                        <th>Pick</th>
-                        <th>Player</th>
-                        <th>Position</th>
-                        <th>College</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for pick in draft.picks.all %}
-                    <tr>
-                        <td>{{ pick.round_number }}</td>
-                        <td>{{ pick.pick_number }}</td>
-                        <td>{{ pick.player.name }}</td>
-                        <td>{{ pick.player.position }}</td>
-                        <td>{{ pick.player.college }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<div class="container draft-results-container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1 class="display-4 text-center">Draft Results</h1>
+            <p class="lead text-center text-muted">Draft completed on {{ draft.draft_date|date:"F j, Y" }}</p>
         </div>
     </div>
-
-    <div class="results-actions">
-        <a href="{% url 'draft_home' %}" class="btn">New Draft</a>
-        <a href="{% url 'draft_detail' draft.id %}" class="btn">View Details</a>
+    
+    <div class="row mb-5">
+        <div class="col-md-8 mx-auto">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Draft Grade: <span class="badge bg-light text-primary">{{ draft.draft_grade }}/100</span></h3>
+                </div>
+                <div class="card-body">
+                    <p class="lead">
+                        {% if draft.draft_grade >= 90 %}
+                            Outstanding draft! You maximized value at nearly every pick.
+                        {% elif draft.draft_grade >= 80 %}
+                            Great draft! You found excellent value throughout your selections.
+                        {% elif draft.draft_grade >= 70 %}
+                            Good draft with solid value. A few picks could have been better optimized.
+                        {% elif draft.draft_grade >= 60 %}
+                            Decent draft with some good selections, but room for improvement.
+                        {% elif draft.draft_grade >= 50 %}
+                            Average draft. Some good picks mixed with some reaches.
+                        {% else %}
+                            Below average draft. Consider focusing more on player value in future drafts.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4">Complete Draft Results</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Pick</th>
+                            <th>Team</th>
+                            <th>Player</th>
+                            <th>Position</th>
+                            <th>College</th>
+                            <th>Ranking</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pick in draft_picks %}
+                        <tr>
+                            <td>{{ pick.pick_number }}</td>
+                            <td>
+                                {{ pick.team_name }}
+                            </td>
+                            <td>{{ pick.player.first_name }} {{ pick.player.last_name }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ pick.player.position }}</span>
+                                <small>{{ pick.player.get_position_display }}</small>
+                            </td>
+                            <td>{{ pick.player.college }}</td>
+                            <td>{{ pick.player.draft_ranking }}</td>
+                            <td>
+                                {% with diff=pick.player.draft_ranking|add:"-"|add:pick.pick_number|abs_value %}
+                                    {% if diff <= 5 %}
+                                        <span class="badge bg-success">Excellent (+10)</span>
+                                    {% elif diff <= 10 %}
+                                        <span class="badge bg-info">Good (+7)</span>
+                                    {% elif diff <= 15 %}
+                                        <span class="badge bg-warning">Average (+5)</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Poor (+2)</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-5">
+        <div class="col-md-12 text-center">
+            <div class="btn-group">
+                <a href="{% url 'draft_home' %}" class="btn btn-primary btn-lg">Back to Home</a>
+                <a href="{% url 'new_draft' %}" class="btn btn-success btn-lg">Start New Draft</a>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

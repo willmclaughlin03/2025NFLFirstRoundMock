@@ -6,3 +6,8 @@ register = template.Library()
 def dict_get(d, key):
     
     return d.get(key)
+
+@register.filter
+def abs_value(value):
+    """Return the absolute value of a number."""
+    return abs(value)

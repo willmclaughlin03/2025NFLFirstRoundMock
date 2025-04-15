@@ -83,13 +83,23 @@ class DraftViewSet(viewsets.ModelViewSet):
     def complete_draft(self, request, pk=None):
         """Mark draft as completed and calculate grade"""
         draft = self.get_object()
+        if draft.is_completed:
+            return Response({
+                'status': 'draft already completed',
+                'draft_grade': draft.draft_grade,
+            })
+
         draft_grade = self._calculate_draft_grade(draft)
+
+
         draft.is_completed = True
         draft.draft_grade = draft_grade
         draft.save()
+
         return Response({
             'status': 'draft completed',
-            'draft_grade': draft_grade
+            'draft_grade': draft_grade,
+            'redirect_url': f'/drafts/{draft.id}/results/'
         })
 
     # Helper methods
@@ -249,4 +259,44 @@ def draft_results(request, draft_id):
         messages.error(request, 'This draft has not been completed yet.')
         return redirect('draft_detail', draft_id=draft_id)
     
+    draft_picks = DraftPick.objects.filter(draft=draft).order_by('pick_number')
+
+    # Check if there are any draft picks
+    if not draft_picks.exists():
+        # Handle case where there are no draft picks
+        messages.warning(request, "No draft picks found for this draft."
+                         
+                         
+                         )
+    
+    if not draft.is_completed:
+    # This might indicate the draft didn't finish properly
+        messages.warning(request, "This draft is not marked as completed.")
+
+    
+    if draft.draft_grade is None:
+        total_points = 0
+
+        for pick in draft_picks:
+            diff =  abs(pick.player.draft_ranking - pick.pick_number)
+            if diff <= 5:
+                total_points += 10
+            elif diff <= 10:
+                total_points += 7
+            elif diff <= 15:
+                total_points += 5
+            else:
+                total_points += 2
+
+        if draft_picks.count() > 0:
+            draft.draft_grade = min(100, total_points)
+            draft.save()
+
+
+    context = {
+        'draft': draft,
+        'draft_picks': draft_picks,
+        'total_picks' : draft_picks.count(),
+        'team_needs': Draft.TEAM_NEEDS,
+    }
     return render(request, 'draft/draft_results.html', {'draft': draft})

@@ -45,11 +45,58 @@
             50% { background-color: #ffe8a1; }
             100% { background-color: #fff3cd; }
         }
+        .pick-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #28a745;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            animation: fadeInOut 4s ease-in-out;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .team-on-clock {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #dc3545;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #dc3545;
+        }
+        .team-logo {
+            height: 30px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        .last-pick {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #e8f4ff;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 class="text-center mb-4">NFL Draft Manager</h1>
+        
+        <!-- Pick notification popup -->
+        <div class="pick-notification" id="pick-notification">
+            <strong>Pick Made!</strong>
+            <p id="pick-notification-text"></p>
+        </div>
         
         <div class="row">
             <!-- Draft Board Column -->
@@ -57,6 +104,25 @@
                 <div class="draft-container">
                     <h3>Draft Board</h3>
                     <button class="btn btn-primary mb-3" id="start-draft-btn">Start Draft</button>
+                    
+                    <!-- Team on clock display -->
+                    <div class="team-on-clock" id="team-on-clock">
+                        {% if not draft.is_completed %}
+                            <span id="team-on-clock-text">
+                                <strong>On The Clock:</strong> {{ current_team }}
+                                <span class="badge bg-danger">Pick #{{ current_pick }}</span>
+                            </span>
+                        {% else %}
+                            <span>Draft Completed</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Last pick display -->
+                    <div class="last-pick" id="last-pick" style="display: none;">
+                        <strong>Last Pick:</strong>
+                        <span id="last-pick-text">No picks yet</span>
+                    </div>
+                    
                     <div class="alert alert-info" id="draft-status">
                         {% if draft.is_completed %}
                             <strong>Draft Completed!</strong>
@@ -71,8 +137,6 @@
                             {% endwith %}
                         {% endif %}
                     </div>
-            
-
                     
                     <div class="table-responsive">
                         <table class="table table-hover">
@@ -87,7 +151,7 @@
                             </thead>
                             <tbody id="draft-picks">
                                 {% for pick in draft_picks %}
-                                <tr class="{% if pick.pick_number == current_pick and not draft.is_completed %}current-pick{% elif pick.player %}completed-pick{% endif %}">
+                                <tr class="{% if pick.pick_number == current_pick and not draft.is_completed %}current-pick{% elif pick.player %}completed-pick{% endif %}" id="pick-row-{{ pick.pick_number }}">
                                     <td>{{ pick.pick_number }}</td>
                                     <td>{{ pick.team_name }}</td>
                                     <td>
@@ -128,7 +192,7 @@
                                 {{ player.college }}
                             </p>
                             <small class="text-muted">Age: {{ player.age }}</small>
-                            <button` class="btn btn-outline-primary btn-sm float-end" 
+                            <button class="btn btn-outline-primary btn-sm float-end" 
                                     onclick="selectPlayer(this.parentElement, {{ player.id }}, {{ current_pick }})">Select Player</button>
                         </a>
                         {% empty %}
@@ -166,6 +230,12 @@
         let selectedPickNumber = {% if current_pick %}{{ current_pick }}{% else %}1{% endif %};
         let isDraftStarted = {% if draft.id %}true{% else %}false{% endif %};
         let draftId = {% if draft.id %}{{ draft.id }}{% else %}null{% endif %};
+        let currentTeam = "{{ current_team }}";
+        let teamOrder = [
+            {% for pick in draft_picks %}
+                "{{ pick.team_name }}"{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
         
         // Start draft function
         document.getElementById('start-draft-btn').addEventListener('click', async function(e) {
@@ -214,6 +284,8 @@
             // Update modal with player info
             const playerName = element.querySelector('h5').textContent;
             document.getElementById('selected-player-name').textContent = playerName;
+            document.getElementById('selected-team-name').textContent = currentTeam;
+            document.getElementById('selected-pick-number').textContent = pickNumber;
             
             // Show confirmation modal
             const modal = new bootstrap.Modal(document.getElementById('confirmPickModal'));
@@ -229,6 +301,9 @@
                 alert('Error: No draft ID available');
                 return;
             }
+            
+            // Show loading indicator or disable buttons if needed
+            document.getElementById('confirm-pick-btn').disabled = true;
             
             try {
                 const response = await fetch(`/api/drafts/${draftId}/add_pick/`, {
@@ -247,46 +322,33 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    // Remove selected player from the board
-                    const selectedCard = document.querySelector(`[data-player-id="${selectedPlayerId}"]`);
-                    if (selectedCard) {
-                        selectedCard.remove();
-                    }
+                    // Show a brief success message
+                    const playerName = document.getElementById('selected-player-name').textContent;
+                    const pickNotification = document.getElementById('pick-notification');
+                    const pickNotificationText = document.getElementById('pick-notification-text');
                     
-                    // Update the draft picks table
-                    const draftPicksTable = document.getElementById('draft-picks');
-                    const currentPickRow = draftPicksTable.querySelector(`tr:nth-child(${selectedPickNumber})`);
-                    if (currentPickRow) {
-                        currentPickRow.classList.remove('current-pick');
-                        currentPickRow.classList.add('completed-pick');
-                        
-                        // Update the player cell
-                        const playerCell = currentPickRow.querySelector('td:nth-child(3)');
-                        if (playerCell) {
-                            playerCell.innerHTML = document.getElementById('selected-player-name').textContent;
-                        }
-                    }
+                    pickNotificationText.textContent = `${currentTeam} selects ${playerName} with pick #${selectedPickNumber}`;
+                    pickNotification.style.display = 'block';
                     
-                    if (data.status === 'draft completed') {
-                        alert('Draft completed successfully!');
-                        window.location.href = `/drafts/${draftId}/results/`;
-                    } else {
-                        // Move to next pick
-                        const nextPickRow = draftPicksTable.querySelector(`tr:nth-child(${selectedPickNumber + 1})`);
-                        if (nextPickRow) {
-                            nextPickRow.classList.add('current-pick');
+                    // Reload the page after a short delay to show the notification
+                    setTimeout(() => {
+                        if (data.status === 'draft completed') {
+                            window.location.href = `/drafts/${draftId}/results/`;
+                        } else {
+                            // Reload the current page to refresh everything
+                            window.location.href = `/drafts/${draftId}/`;
                         }
-                        window.location.reload();
-                    }
+                    }, 1500);
                 } else {
+                    document.getElementById('confirm-pick-btn').disabled = false;
                     alert('Error: ' + (data.message || 'Failed to add pick'));
                 }
             } catch (error) {
+                document.getElementById('confirm-pick-btn').disabled = false;
                 console.error('Error:', error);
                 alert('An error occurred while making the pick');
             }
         });
-        
         // Player search functionality
         document.getElementById('player-search').addEventListener('input', function(e) {
             const searchTerm = e.target.value.toLowerCase();
@@ -294,6 +356,24 @@
                 const playerText = card.textContent.toLowerCase();
                 card.style.display = playerText.includes(searchTerm) ? 'block' : 'none';
             });
+        });
+        
+        // Initialize the view with any existing picks
+        document.addEventListener('DOMContentLoaded', function() {
+            const lastCompletedPickRows = document.querySelectorAll('.completed-pick');
+            if (lastCompletedPickRows.length > 0) {
+                // Get the last completed pick
+                const lastRow = lastCompletedPickRows[lastCompletedPickRows.length - 1];
+                const pickNumber = lastRow.querySelector('td:nth-child(1)').textContent;
+                const team = lastRow.querySelector('td:nth-child(2)').textContent;
+                const player = lastRow.querySelector('td:nth-child(3)').textContent;
+                
+                // Update last pick display
+                const lastPickElement = document.getElementById('last-pick');
+                const lastPickText = document.getElementById('last-pick-text');
+                lastPickText.textContent = `${team} selected ${player} with pick #${pickNumber}`;
+                lastPickElement.style.display = 'block';
+            }
         });
     </script>
 </body>
