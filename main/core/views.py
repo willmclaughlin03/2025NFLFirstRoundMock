@@ -299,4 +299,4 @@ def draft_results(request, draft_id):
         'total_picks' : draft_picks.count(),
         'team_needs': Draft.TEAM_NEEDS,
     }
-    return render(request, 'draft/draft_results.html', {'draft': draft})
+    return render(request, 'draft/draft_results.html', context)

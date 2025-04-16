@@ -8,6 +8,9 @@ def dict_get(d, key):
     return d.get(key)
 
 @register.filter
-def abs_value(value):
-    """Return the absolute value of a number."""
-    return abs(value)
+def draft_position_diff(ranking, pick_number):
+    """Calculate absolute difference between draft ranking and pick number."""
+    try:
+        return abs(int(ranking) - int(pick_number))
+    except (ValueError, TypeError):
+        return 0

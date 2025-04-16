@@ -17,24 +17,24 @@
                     </div>
                     <div class="card-body">
                         {% if drafts %}
-                            <div class="list-group">
-                                {% for draft in drafts %}
-                                    <a href="{% url 'draft_detail' draft.id %}" class="list-group-item list-group-item-action">
-                                        <div class="d-flex w-100 justify-content-between">
-                                            <h6 class="mb-1">Draft #{{ draft.id }}</h6>
-                                            <small>{{ draft.draft_date|date:"F j, Y" }}</small>
-                                        </div>
-                                        <p class="mb-1">
-                                            {% if draft.is_completed %}
-                                                <span class="badge bg-success">Completed</span>
-                                                Grade: {{ draft.draft_grade }}%
-                                            {% else %}
-                                                <span class="badge bg-warning">In Progress</span>
-                                            {% endif %}
-                                        </p>
-                                    </a>
-                                {% endfor %}
-                            </div>
+                        <div class="list-group">
+                            {% for draft in drafts %}
+                                <a href="{% if draft.is_completed %}{% url 'draft_results' draft.id %}{% else %}{% url 'draft_detail' draft.id %}{% endif %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">Draft #{{ draft.id }}</h6>
+                                        <small>{{ draft.draft_date|date:"F j, Y" }}</small>
+                                    </div>
+                                    <p class="mb-1">
+                                        {% if draft.is_completed %}
+                                            <span class="badge bg-success">Completed</span>
+                                            Grade: {{ draft.draft_grade }}%
+                                        {% else %}
+                                            <span class="badge bg-warning">In Progress</span>
+                                        {% endif %}
+                                    </p>
+                                </a>
+                            {% endfor %}
+                        </div>
                         {% else %}
                             <p class="text-muted">You haven't started any drafts yet.</p>
                         {% endif %}
@@ -54,25 +54,6 @@
             {% endif %}
         </div>
         
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Top Prospects</h5>
-                </div>
-                <div class="card-body">
-                    <div class="list-group">
-                        {% for player in Player %}
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ player.first_name }} {{ player.last_name }}</h6>
-                                    <small>#{{ player.draft_ranking }}</small>
-                                </div>
-                                <p class="mb-1">{{ player.position }} - {{ player.college }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>

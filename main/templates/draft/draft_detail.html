@@ -86,6 +86,15 @@
             border-radius: 5px;
             border-left: 4px solid #007bff;
         }
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .page-indicator {
+            margin: 0 10px;
+            line-height: 38px;
+        }
     </style>
 </head>
 <body>
@@ -182,6 +191,7 @@
                         {% for player in available_players %}
                         <a href="#" class="list-group-item list-group-item-action player-card" 
                            data-player-id="{{ player.id }}"
+                           data-page="1"
                            onclick="selectPlayer(this, {{ player.id }}, {{ current_pick }})">
                             <div class="d-flex w-100 justify-content-between">
                                 <h5 class="mb-1">{{ player.first_name }} {{ player.last_name }}</h5>
@@ -198,6 +208,13 @@
                         {% empty %}
                         <div class="alert alert-warning">No players available</div>
                         {% endfor %}
+                    </div>
+                    
+                    <!-- Pagination Controls -->
+                    <div class="pagination-container">
+                        <button class="btn btn-outline-secondary" id="prev-page" disabled>&laquo; Previous</button>
+                        <span class="page-indicator" id="page-indicator">Page 1</span>
+                        <button class="btn btn-outline-secondary" id="next-page">Next &raquo;</button>
                     </div>
                 </div>
             </div>
@@ -236,6 +253,47 @@
                 "{{ pick.team_name }}"{% if not forloop.last %},{% endif %}
             {% endfor %}
         ];
+
+        // Pagination variables
+        let currentPage = 1;
+        let playersPerPage = 10;
+        let totalPlayers = document.querySelectorAll('.player-card').length;
+        let totalPages = Math.ceil(totalPlayers / playersPerPage);
+        
+        // Initialize pagination
+        function initPagination() {
+            document.getElementById('page-indicator').textContent = `Page ${currentPage} of ${totalPages}`;
+            document.getElementById('prev-page').disabled = (currentPage === 1);
+            document.getElementById('next-page').disabled = (currentPage === totalPages || totalPages === 0);
+            
+            // Show only players for current page
+            const allPlayers = document.querySelectorAll('.player-card');
+            const startIndex = (currentPage - 1) * playersPerPage;
+            const endIndex = startIndex + playersPerPage;
+            
+            allPlayers.forEach((player, index) => {
+                if (index >= startIndex && index < endIndex) {
+                    player.style.display = 'block';
+                } else {
+                    player.style.display = 'none';
+                }
+            });
+        }
+        
+        // Pagination event listeners
+        document.getElementById('prev-page').addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                initPagination();
+            }
+        });
+        
+        document.getElementById('next-page').addEventListener('click', function() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                initPagination();
+            }
+        });
         
         // Start draft function
         document.getElementById('start-draft-btn').addEventListener('click', async function(e) {
@@ -349,17 +407,41 @@
                 alert('An error occurred while making the pick');
             }
         });
+        
         // Player search functionality
         document.getElementById('player-search').addEventListener('input', function(e) {
             const searchTerm = e.target.value.toLowerCase();
+            let visiblePlayers = 0;
+            
             document.querySelectorAll('.player-card').forEach(card => {
                 const playerText = card.textContent.toLowerCase();
-                card.style.display = playerText.includes(searchTerm) ? 'block' : 'none';
+                const doesMatch = playerText.includes(searchTerm);
+                
+                if (doesMatch) {
+                    visiblePlayers++;
+                }
+                
+                // Reset pagination when searching
+                if (searchTerm) {
+                    card.style.display = doesMatch ? 'block' : 'none';
+                    document.getElementById('prev-page').style.display = 'none';
+                    document.getElementById('next-page').style.display = 'none';
+                    document.getElementById('page-indicator').textContent = 
+                        visiblePlayers > 0 ? `Showing ${visiblePlayers} results` : 'No matching players';
+                } else {
+                    // Return to normal pagination
+                    document.getElementById('prev-page').style.display = 'block';
+                    document.getElementById('next-page').style.display = 'block';
+                    initPagination();
+                }
             });
         });
         
         // Initialize the view with any existing picks
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize pagination
+            initPagination();
+            
             const lastCompletedPickRows = document.querySelectorAll('.completed-pick');
             if (lastCompletedPickRows.length > 0) {
                 // Get the last completed pick

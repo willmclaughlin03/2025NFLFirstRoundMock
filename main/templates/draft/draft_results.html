@@ -71,7 +71,7 @@
                             <td>{{ pick.player.college }}</td>
                             <td>{{ pick.player.draft_ranking }}</td>
                             <td>
-                                {% with diff=pick.player.draft_ranking|add:"-"|add:pick.pick_number|abs_value %}
+                                {% with diff=pick.player.draft_ranking|draft_position_diff:pick.pick_number %}
                                     {% if diff <= 5 %}
                                         <span class="badge bg-success">Excellent (+10)</span>
                                     {% elif diff <= 10 %}
