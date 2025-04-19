@@ -298,14 +298,20 @@
         // Start draft function
         document.getElementById('start-draft-btn').addEventListener('click', async function(e) {
             e.preventDefault();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const draftName = urlParams.get('draft_name') || 'Untitled Draft';
             try {
                 const response = await fetch("{% url 'draft-create' %}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': '{{ csrf_token }}'
-                    }
-                });
+                    },
+                    body: JSON.stringify({
+                        draft_name: draftName,
+                    })
+                    });
                 
                 const data = await response.json();
                 

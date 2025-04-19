@@ -7,9 +7,19 @@ from rest_framework.response import Response
 from rest_framework.authentication import (SessionAuthentication, 
                                          BasicAuthentication, 
                                          TokenAuthentication)
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, SAFE_METHODS, BasePermission
 from .models import Player, Draft, DraftPick
 from .serializers import PlayerSerializer, DraftSerializer, DraftPickSerializer
+
+class IsOwnerOrReadOnly(BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+
+        if request.method in SAFE_METHODS:
+            return True
+
+        # Instance must have an attribute named `owner`.
+        return obj.user == request.user
 
 class PlayerViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Player.objects.all()
@@ -27,7 +37,7 @@ class PlayerViewSet(viewsets.ReadOnlyModelViewSet):
 class DraftViewSet(viewsets.ModelViewSet):
     serializer_class = DraftSerializer
     authentication_classes = [SessionAuthentication, BasicAuthentication]
-    #permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
 
     # filters players by their position if specified
@@ -36,7 +46,17 @@ class DraftViewSet(viewsets.ModelViewSet):
 
     # assigns the current user to the new drafts taking place
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(user=self.request.user,
+                        name = self.request.data.get('draft_name', 'Untitled Draft'))
+
+    def check_object_permissions(self, request, obj):
+        """Check if user has permission to access this draft"""
+        super().check_object_permissions(request, obj)
+        if obj.user != request.user:
+            self.permission_denied(
+                request, 
+                message="You do not have permission to access this draft."
+            )
 
     # uses get method to get the current status of draft and the next picks
     @action(detail=True, methods=['get'])
@@ -144,11 +164,13 @@ class DraftViewSet(viewsets.ModelViewSet):
     def _create_pick_serializer(self, draft, request):
         return DraftPickSerializer(
             data=request.data,
+            
             context={
-                'draft': draft,
-                'available_players': Player.objects.all().order_by('draft_ranking')
-            }
-        )
+            'draft': draft,
+            'available_players': Player.objects.all().order_by('draft_ranking')
+        }
+    )
+    # creates the pick serializer and validates it
 
     # finishes the pick process by validaing the pick one last time
     def _process_valid_pick(self, draft, pick_number, serializer):
@@ -195,6 +217,17 @@ class DraftViewSet(viewsets.ModelViewSet):
             2 for pick in draft_picks
         )
         return min(max(round((total_points / 100) * 100), 0), 100)
+    
+    def _create_draft_seriaizer(self, request):
+
+        return DraftSerializer(
+            data = {
+                'name ': request.data.get('draft_name', 'Untitled Draft'),
+            }
+        )
+    
+      
+           
 
 
 
@@ -202,12 +235,23 @@ class DraftViewSet(viewsets.ModelViewSet):
 def draft_home(request):
     """Render the draft home page"""
     context = {}
-    if request.user.is_authenticated:
-        context['drafts'] = Draft.objects.filter(
-            user=request.user
-        ).order_by('-draft_date')[:3]
-    # Add top prospects to context
+    
+    search_query = request.GET.get('search', '').strip()  
+
+    if search_query:
+
+        user_drafts = Draft.objects.filter(
+            user=request.user, 
+            name__icontains = search_query).order_by('-draft_date')
+    else:
+        user_drafts = Draft.objects.filter(user=request.user).order_by('-draft_date')[:5]
+
+    context['drafts'] = user_drafts
+    context['search_query'] = search_query
     context['top_prospects'] = Player.objects.all().order_by('draft_ranking')[:10]
+
+    # Add top prospects to context
+    
     return render(request, 'draft/draft_home.html', context)
 
 
@@ -217,10 +261,14 @@ def draft_detail(request, draft_id = None):
 
     """Render the draft detail page"""
     if draft_id == 'new':
+
+        draft_name = request.GET.get('draft_name', 'Untitled Draft')
+
         current_pick = 1
         current_team = list(Draft.TEAM_NEEDS.keys())[0]
         context = {
             'is_new' : True,
+            'draft_name' : draft_name,
             'available_players' : Player.objects.all().order_by('draft_ranking'),
             'team_needs' : Draft.TEAM_NEEDS,
             'current_pick': current_pick,
@@ -233,7 +281,7 @@ def draft_detail(request, draft_id = None):
     draft = get_object_or_404(Draft, id = draft_id, user=request.user)
     context = {
         'draft': draft,
-        'picks': draft.DRAFT_PICKS.sort(),
+        'picks': sorted(draft.DRAFT_PICKS),
         'team_needs' : Draft.TEAM_NEEDS,
     }
     

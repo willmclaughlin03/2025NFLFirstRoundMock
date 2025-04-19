@@ -11,40 +11,67 @@
             <p class="lead">Welcome to the 2025 NFL Draft Simulator. Experience the excitement of being an NFL GM and make your picks!</p>
             
             {% if user.is_authenticated %}
+                <!-- Search Form -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0">Your Recent Drafts</h5>
+                        <h5 class="mb-0">Search Your Drafts</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="GET" action="{% url 'draft_home' %}" class="d-flex">
+                            <input type="text" name="search" class="form-control me-2" placeholder="Search by draft name..." value="{{ search_query }}">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Create New Draft Form -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Create New Draft</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="GET" action="{% url 'new_draft' %}" class="d-flex">
+                            <input type="text" name="draft_name" class="form-control me-2" placeholder="Enter draft name..." required>
+                            <button type="submit" class="btn btn-success">Create Draft</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Your Drafts</h5>
+                        {% if search_query %}
+                        <span class="badge bg-info">Showing results for: "{{ search_query }}"</span>
+                        {% endif %}
                     </div>
                     <div class="card-body">
                         {% if drafts %}
                         <div class="list-group">
                             {% for draft in drafts %}
-                                <a href="{% if draft.is_completed %}{% url 'draft_results' draft.id %}{% else %}{% url 'draft_detail' draft.id %}{% endif %}" class="list-group-item list-group-item-action">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-1">Draft #{{ draft.id }}</h6>
-                                        <small>{{ draft.draft_date|date:"F j, Y" }}</small>
-                                    </div>
-                                    <p class="mb-1">
-                                        {% if draft.is_completed %}
-                                            <span class="badge bg-success">Completed</span>
-                                            Grade: {{ draft.draft_grade }}%
-                                        {% else %}
-                                            <span class="badge bg-warning">In Progress</span>
-                                        {% endif %}
-                                    </p>
-                                </a>
+                            <a href="{% if draft.is_completed %}{% url 'draft_results' draft.id %}{% else %}{% url 'draft_detail' draft.id %}{% endif %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ draft.name }}</h6>
+                                    <small>{{ draft.draft_date|date:"F j, Y" }}</small>
+                                </div>
+                                <p class="mb-1">
+                                    {% if draft.is_completed %}
+                                        <span class="badge bg-success">Completed</span>
+                                        Grade: {{ draft.draft_grade }}%
+                                    {% else %}
+                                        <span class="badge bg-warning">In Progress</span>
+                                    {% endif %}
+                                </p>
+                            </a>
                             {% endfor %}
                         </div>
                         {% else %}
-                            <p class="text-muted">You haven't started any drafts yet.</p>
+                            {% if search_query %}
+                                <p class="text-muted">No drafts found matching "{{ search_query }}".</p>
+                            {% else %}
+                                <p class="text-muted">You haven't started any drafts yet.</p>
+                            {% endif %}
                         {% endif %}
                     </div>
-                </div>
-                
-                <div class="d-grid gap-2">
-                    <a href="{% url 'new_draft' %}" class="btn btn-primary btn-lg">
-                        Start New Draft
-                    </a>
                 </div>
             {% else %}
                 <div class="alert alert-info">
@@ -52,8 +79,6 @@
                     <p>Please <a href="{% url 'login' %}">login</a> or <a href="{% url 'signup' %}">sign up</a> to start your draft simulation.</p>
                 </div>
             {% endif %}
-        </div>
-        
         </div>
     </div>
 </div>

@@ -2,7 +2,7 @@
 
 {% load custom_tags %}
 
-{% block title %}Draft Results{% endblock %}
+{% block title %}Draft Results - {{ draft.name }}{% endblock %}
 
 {% block content %}
 <div class="container draft-results-container">
@@ -20,21 +20,7 @@
                     <h3 class="mb-0">Draft Grade: <span class="badge bg-light text-primary">{{ draft.draft_grade }}/100</span></h3>
                 </div>
                 <div class="card-body">
-                    <p class="lead">
-                        {% if draft.draft_grade >= 90 %}
-                            Outstanding draft! You maximized value at nearly every pick.
-                        {% elif draft.draft_grade >= 80 %}
-                            Great draft! You found excellent value throughout your selections.
-                        {% elif draft.draft_grade >= 70 %}
-                            Good draft with solid value. A few picks could have been better optimized.
-                        {% elif draft.draft_grade >= 60 %}
-                            Decent draft with some good selections, but room for improvement.
-                        {% elif draft.draft_grade >= 50 %}
-                            Average draft. Some good picks mixed with some reaches.
-                        {% else %}
-                            Below average draft. Consider focusing more on player value in future drafts.
-                        {% endif %}
-                    </p>
+                    <p class="lead">{{ draft.get_grade_feedback }}</p>
                 </div>
             </div>
         </div>

@@ -21,15 +21,19 @@ class UserSignUpTempView(CreateView):
     model = User
     serializer_class = UserSerializer
     success_url = reverse_lazy('login')
-    fields = ['first_name', 'last_name', 'email_address', 'username', 'password']
+    fields = ['email_address', 'username', 'password']
 
     def form_valid(self, form):
-        response = super().form_valid(form)
-        user = form.save()
+        user = form.save(commit = False)
+        password = form.cleaned_data.get('password')
+        user.set_password(password)
+        user.save()
+
+        # Create token for the user
         token, created = Token.objects.get_or_create(user = user)
 
         messages.success(self.request, 'Account created successfully!')
-        return response
+        return super().form_valid(form)
     
 class UserLoginTempView(LoginView):
     template_name = 'registration/login.html'
@@ -38,7 +42,7 @@ class UserLoginTempView(LoginView):
     def get_success_url(self):
         return reverse_lazy('draft_home')
     
-    def form_invaild(self, form):
+    def form_invalid(self, form):
         messages.error(self.request, 'Invalid Username or Password')
         return super().form_invalid(form)
     

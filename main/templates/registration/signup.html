@@ -1,21 +1,218 @@
-{% block content %}
-<div class="signup-container">
-    <h2>Create an Account</h2>
-    
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
-
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-primary">Sign Up</button>
-    </form>
-
-    <p>Already have an account? <a href="{% url 'login' %}">Login</a></p>
-</div>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Signup Form</title>
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --primary-hover: #3a56d4;
+            --light-gray: #f8f9fa;
+            --border-color: #e0e0e0;
+            --text-color: #333;
+            --error-color: #ef476f;
+            --success-color: #06d6a0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .signup-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 480px;
+            padding: 40px;
+            transition: transform 0.3s ease;
+        }
+        
+        .signup-container:hover {
+            transform: translateY(-5px);
+        }
+        
+        h2 {
+            color: var(--text-color);
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+        
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            background-color: var(--light-gray);
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+            background-color: white;
+        }
+        
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s, transform 0.2s;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .footer-text {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 15px;
+            color: #666;
+        }
+        
+        .footer-text a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .footer-text a:hover {
+            color: var(--primary-hover);
+            text-decoration: underline;
+        }
+        
+        .alert {
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .alert-error {
+            background-color: rgba(239, 71, 111, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(239, 71, 111, 0.2);
+        }
+        
+        .alert-success {
+            background-color: rgba(6, 214, 160, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(6, 214, 160, 0.2);
+        }
+        
+        .helptext {
+            display: block;
+            font-size: 12px;
+            color: #777;
+            margin-top: 6px;
+        }
+        
+        /* Error styling */
+        .errorlist {
+            list-style: none;
+            color: var(--error-color);
+            font-size: 13px;
+            margin-top: 6px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 520px) {
+            .signup-container {
+                padding: 25px;
+            }
+            
+            h2 {
+                font-size: 24px;
+                margin-bottom: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% block content %}
+        <div class="signup-container">
+            <h2>Create an Account</h2>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                {% for field in form %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <span class="helptext">{{ field.help_text }}</span>
+                        {% endif %}
+                        {% if field.errors %}
+                            <ul class="errorlist">
+                                {% for error in field.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                
+                <button type="submit" class="btn">Create Account</button>
+            </form>
+            
+            <p class="footer-text">Already have an account? <a href="{% url 'login' %}">Log In</a></p>
+        </div>
+        {% endblock %}
+    </div>
+</body>
+</html>
