@@ -194,7 +194,7 @@
                         <a href="#" class="list-group-item list-group-item-action player-card" 
                            data-player-id="{{ player.id }}"
                            data-page="1"
-                           onclick="selectPlayer(this, {{ player.id }}, {% if current_pick %}{{ current_pick }}{% else %}1{% endif %})">
+                           onclick="selectPlayer(this, {{ player.id }}, {% if current_pick %}{{ current_pick }}{% else %}{% endif %})">
                             <div class="d-flex w-100 justify-content-between">
                                 <h5 class="mb-1">{{ player.first_name }} {{ player.last_name }}</h5>
                                 <small class="text-muted">#{{ player.draft_ranking }}</small>
