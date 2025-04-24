@@ -26,9 +26,9 @@ load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = [https://draftsimulatornfl.onrender.com, 'localhost', 'http://127.0.0.1']
+ALLOWED_HOSTS = ['draftsimulatornfl.onrender.com', 'localhost', '127.0.0.1']
 
 
 
@@ -60,7 +60,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 ROOT_URLCONF = 'main.urls'
 
@@ -89,13 +91,14 @@ WSGI_APPLICATION = 'main.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),  
-        'PORT': os.getenv('DB_PORT'), 
-    }
-}
+        'NAME': os.getenv('AURORA_DB_NAME'),
+        'USER': os.getenv('AURORA_DB_USER'),
+        'PASSWORD': os.getenv('AURORA_DB_PASSWORD'),
+        'HOST': os.getenv('AURORA_DB_HOST'),
+        'PORT': os.getenv('AURORA_DB_PORT', '3306'),
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",    }
+}}
 
 
 # Password validation
@@ -140,7 +143,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]

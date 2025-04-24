@@ -238,13 +238,17 @@ def draft_home(request):
     
     search_query = request.GET.get('search', '').strip()  
 
-    if search_query:
+    if request.user.is_authenticated:
+        if search_query:
 
-        user_drafts = Draft.objects.filter(
-            user=request.user, 
-            name__icontains = search_query).order_by('-draft_date')
+            user_drafts = Draft.objects.filter(
+                user=request.user, 
+                name__icontains = search_query).order_by('-draft_date')
+        else:
+            user_drafts = Draft.objects.filter(user=request.user).order_by('-draft_date')[:5]
     else:
-        user_drafts = Draft.objects.filter(user=request.user).order_by('-draft_date')[:5]
+        # For anonymous users, return an empty queryset
+        user_drafts = Draft.objects.none()
 
     context['drafts'] = user_drafts
     context['search_query'] = search_query
