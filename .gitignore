@@ -7,15 +7,23 @@ db.sqlite3
 media/
 staticfiles/
 
+
 # Virtual Environment
 env/
 
 # Environment
 main/.env
-
+.git/
 # IDE
 .idea/
 .vscode/
 
+.ebextensions/
+.elasticbeanstalk/
+
 # macOS
 .DS_Store
+
+.ebignore
+Procfile
+dep4.zip/

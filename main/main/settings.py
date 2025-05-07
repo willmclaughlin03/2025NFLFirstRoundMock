@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from dotenv import load_dotenv
 from pathlib import Path
+import pymysql
+pymysql.install_as_MySQLdb()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
@@ -26,9 +28,9 @@ load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['draftsimulatornfl.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.elasticbeanstalk.com', '.amazonaws.com',]
 
 
 
@@ -69,7 +71,7 @@ ROOT_URLCONF = 'main.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [BASE_DIR , 'main', 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -91,11 +93,11 @@ WSGI_APPLICATION = 'main.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('AURORA_DB_NAME'),
-        'USER': os.getenv('AURORA_DB_USER'),
-        'PASSWORD': os.getenv('AURORA_DB_PASSWORD'),
-        'HOST': os.getenv('AURORA_DB_HOST'),
-        'PORT': os.getenv('AURORA_DB_PORT', '3306'),
+        'NAME': os.getenv('AURORA_DB_NAME') or os.getenv('RDS_DB_NAME'),
+        'USER': os.getenv('AURORA_DB_USER') or os.getenv('RDS_DB_USER'),
+        'PASSWORD': os.getenv('AURORA_DB_PASSWORD') or os.getenv('RDS_DB_PASSWORD'),
+        'HOST': os.getenv('AURORA_DB_HOST') or os.getenv('RDS_DB_HOST'),
+        'PORT': os.getenv('AURORA_DB_PORT', '3306') or os.getenv('RDS_DB_PORT', '3306'),
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",    }
 }}
@@ -144,9 +146,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR,'staticfiles')
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
+    os.path.join(BASE_DIR, 'static'),  # Updated path to point to main/static
 ]
 
 # Default primary key field type

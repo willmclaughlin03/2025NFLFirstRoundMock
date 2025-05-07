@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: 2025NFLDraft
-    runtime: python
-    buildCommand: |
-      poetry install
-      python manage.py collectstatic --noinput
-      python manage.py migrate
-    startCommand: "gunicorn 2025NFLDraft.wsgi:application"
